@@ -1,0 +1,83 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+}
+
+/* Deep-blue dark UI with subtle borders. */
+:root {
+  --radius: 0.75rem;
+  --background: oklch(0.18 0.04 270);          /* #1a1a2e-ish */
+  --foreground: oklch(0.98 0.005 250);
+  --card: oklch(0.22 0.04 270);
+  --card-foreground: oklch(0.98 0.005 250);
+  --popover: oklch(0.22 0.04 270);
+  --popover-foreground: oklch(0.98 0.005 250);
+  --primary: oklch(0.72 0.16 255);              /* bright indigo accent */
+  --primary-foreground: oklch(0.15 0.03 270);
+  --secondary: oklch(0.28 0.04 270);
+  --secondary-foreground: oklch(0.98 0.005 250);
+  --muted: oklch(0.26 0.03 270);
+  --muted-foreground: oklch(0.72 0.02 260);
+  --accent: oklch(0.32 0.06 270);
+  --accent-foreground: oklch(0.98 0.005 250);
+  --destructive: oklch(0.62 0.22 25);
+  --destructive-foreground: oklch(0.98 0.005 250);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.72 0.16 255);
+  --sidebar: oklch(0.20 0.04 270);
+  --sidebar-foreground: oklch(0.95 0.005 250);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-accent: oklch(0.28 0.04 270);
+  --sidebar-accent-foreground: oklch(0.98 0.005 250);
+}
+
+.dark { /* same — app is dark-first */
+  --background: oklch(0.18 0.04 270);
+  --foreground: oklch(0.98 0.005 250);
+}
+
+@layer base {
+  * { border-color: var(--color-border); }
+  html, body, #root { height: 100%; }
+  body {
+    background:
+      radial-gradient(1200px 600px at 10% -10%, oklch(0.32 0.10 270 / 0.35), transparent 60%),
+      radial-gradient(900px 500px at 110% 10%, oklch(0.30 0.12 290 / 0.25), transparent 60%),
+      var(--color-background);
+    color: var(--color-foreground);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  }
+}
