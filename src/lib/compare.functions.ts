@@ -2,12 +2,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { RESEARCH_MIND_PROMPT } from "@/config/systemPrompt";
-import { AI_MODES, buildBehaviorInstructions } from "@/lib/aiBehavior";
-
-
+import { AI_MODES, buildBehaviorInstructions, buildLanguageInstruction } from "@/lib/aiBehavior";
 
 // Direct Gemini API — no Lovable credits needed.
-// Uses Google's OpenAI-compatible endpoint.
 async function callGemini(messages: { role: string; content: string }[]) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("AI is not configured. Set GEMINI_API_KEY in your environment.");
@@ -54,29 +51,34 @@ async function buildPaperBundle(
   return { bundle, titles: papers.map((p: any) => p.title) };
 }
 
+/** Builds the language reminder appended to user messages */
+function langReminder(lang: string): string {
+  if (!lang || lang === "English") return "";
+  return `\n\n[REMINDER: Your entire response MUST be in ${lang}. Do not use English except for proper nouns and technical terms with no ${lang} equivalent.]`;
+}
+
 /** Create a comparison: runs initial AI compare, saves it, returns the new id. */
 export const createComparison = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z
-      .object({
-        paperIds: z.array(z.string().uuid()).min(2).max(5),
-        focus: z.string().max(500).optional(),
-        mode: z.enum(AI_MODES).optional().default("researcher"),
-      })
-      .parse(d),
+    z.object({
+      paperIds: z.array(z.string().uuid()).min(2).max(5),
+      focus: z.string().max(500).optional(),
+      mode: z.enum(AI_MODES).optional().default("researcher"),
+      /** Full English name of the UI language, e.g. "Hindi", "Kannada" */
+      lang: z.string().optional().default("English"),
+    }).parse(d),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { bundle, titles } = await buildPaperBundle(supabase, data.paperIds);
 
-    // Treat focus as the user's question. If no focus, default to full report.
     const focusText = (data.focus ?? "").trim();
-    const effectiveQuestion =
-      focusText.length > 0 ? focusText : "Full comparison report";
+    const effectiveQuestion = focusText.length > 0 ? focusText : "Full comparison report";
     const { instructions, intent, size } = buildBehaviorInstructions(
       effectiveQuestion,
       data.mode,
+      data.lang,
     );
 
     const fullReportBlock = `Produce a structured comparison with:
@@ -87,26 +89,24 @@ export const createComparison = createServerFn({ method: "POST" })
 5. Recommended reading order
 6. Reviewer-style scores per paper (Methodology, Dataset, Novelty, Impact, Implementation — each /10) and a final Winner with confidence /10.`;
 
-    const focusedBlock = `Answer ONLY the focused request below across the provided papers. Do NOT generate a side-by-side problem/methodology/dataset/results table, common themes, differences, reading order, research gaps, reviewer scores, or a winner unless the request explicitly asks for them.
+    const focusedBlock = `Answer ONLY the focused request below across the provided papers. Do NOT generate a side-by-side table, common themes, differences, reading order, research gaps, reviewer scores, or a winner unless explicitly asked.
 
 FOCUSED REQUEST: ${focusText}`;
 
-    const reviewerBlock = `Produce a REVIEWER COMPARISON across the provided papers using the reviewer output format defined in your behavior instructions. For each paper give Novelty/Methodology/Dataset/Impact/Feasibility scores (/10), then a Winner with 2–4 bullet reasons, then Confidence /10. Do NOT generate Common Themes, Reading Order, Research Gaps, Project Ideas, Future Work or Viva Questions.
+    const reviewerBlock = `Produce a REVIEWER COMPARISON across the provided papers using the reviewer output format defined in your behavior instructions. For each paper give Novelty/Methodology/Dataset/Impact/Feasibility scores (/10), then a Winner with 2–4 bullet reasons, then Confidence /10.
 
 ${focusText ? `FOCUS: ${focusText}` : ""}`;
 
     const taskBlock =
-      data.mode === "reviewer"
-        ? reviewerBlock
-        : intent === "full_report"
-          ? fullReportBlock
-          : focusedBlock;
+      data.mode === "reviewer" ? reviewerBlock
+      : intent === "full_report"  ? fullReportBlock
+      : focusedBlock;
 
     const userMsg = `Compare the following research papers.
 
 ${taskBlock}
 
-${bundle}`;
+${bundle}${langReminder(data.lang)}`;
 
     const answer = await callGemini([
       { role: "system", content: `${RESEARCH_MIND_PROMPT}\n\n${instructions}` },
@@ -133,9 +133,7 @@ ${bundle}`;
         comparison_id: comp.id,
         user_id: userId,
         role: "user",
-        content: focusText
-          ? `Compare these papers (focus: ${focusText})`
-          : "Compare these papers",
+        content: focusText ? `Compare these papers (focus: ${focusText})` : "Compare these papers",
       },
       { comparison_id: comp.id, user_id: userId, role: "assistant", content: answer },
     ]);
@@ -147,13 +145,13 @@ ${bundle}`;
 export const askComparison = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z
-      .object({
-        comparisonId: z.string().uuid(),
-        question: z.string().min(1).max(4000),
-        mode: z.enum(AI_MODES).optional().default("student"),
-      })
-      .parse(d),
+    z.object({
+      comparisonId: z.string().uuid(),
+      question: z.string().min(1).max(4000),
+      mode: z.enum(AI_MODES).optional().default("student"),
+      /** Full English name of the UI language */
+      lang: z.string().optional().default("English"),
+    }).parse(d),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -173,7 +171,11 @@ export const askComparison = createServerFn({ method: "POST" })
       .eq("comparison_id", data.comparisonId)
       .order("created_at", { ascending: true });
 
-    const { instructions, intent, size } = buildBehaviorInstructions(data.question, data.mode);
+    const { instructions, intent, size } = buildBehaviorInstructions(
+      data.question,
+      data.mode,
+      data.lang,
+    );
 
     const systemPrompt = `${RESEARCH_MIND_PROMPT}
 
@@ -188,7 +190,7 @@ ${bundle}
     const messages = [
       { role: "system", content: systemPrompt },
       ...(history ?? []).map((m: any) => ({ role: m.role, content: m.content })),
-      { role: "user", content: data.question },
+      { role: "user", content: data.question + langReminder(data.lang) },
     ];
 
     const answer = await callGemini(messages);

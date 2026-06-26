@@ -18,7 +18,7 @@ import { ModeSelector, ActiveModeBadge, useAIMode } from "@/components/ModeSelec
 import { toast } from "sonner";
 import { TTSSpeaker } from "@/components/TTSSpeaker";
 import { useVoiceInput } from "@/hooks/use-voice-input";
-import { useLanguage } from "@/components/LanguageProvider";
+import { useLanguage, LANG_NAME } from "@/components/LanguageProvider";
 
 export const Route = createFileRoute("/_authenticated/compare")({
   head: () => ({ meta: [{ title: "Compare papers — ResearchMind AI" }] }),
@@ -34,7 +34,7 @@ function ComparePage() {
   const askFn = useServerFn(askComparison);
   const renameFn = useServerFn(renameComparison);
   const deleteFn = useServerFn(deleteComparison);
-  const { t, bcp47 } = useLanguage();
+  const { t, bcp47, lang } = useLanguage();
 
   const [papers, setPapers] = useState<Paper[]>([]);
   const [history, setHistory] = useState<Comparison[]>([]);
@@ -98,7 +98,7 @@ function ComparePage() {
     setCreating(true);
     try {
       const res = await createFn({
-        data: { paperIds: Array.from(selected), focus: focus || undefined, mode },
+        data: { paperIds: Array.from(selected), focus: focus || undefined, mode, lang: LANG_NAME[lang] },
       });
       toast.success("Comparison created");
       setSelected(new Set()); setFocus(""); setShowNew(false);
@@ -116,7 +116,7 @@ function ComparePage() {
     setMessages((m) => [...m, { role: "user", content: q }]);
     setSending(true);
     try {
-      const res = await askFn({ data: { comparisonId: activeId, question: q, mode } });
+      const res = await askFn({ data: { comparisonId: activeId, question: q, mode, lang: LANG_NAME[lang] } });
       setMessages((m) => [...m, { role: "assistant", content: res.answer }]);
       loadHistory();
     } catch (e) {

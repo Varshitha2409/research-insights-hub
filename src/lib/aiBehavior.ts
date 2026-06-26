@@ -18,6 +18,21 @@ export const MODE_DESCRIPTION: Record<AIMode, string> = {
   professor: "Viva questions, future work, research gaps and academic discussion.",
 };
 
+// ─── Language instruction injected at the TOP of every system prompt ────────
+// This ensures Gemini always responds in the user's selected language regardless
+// of what language the user typed their question in.
+export function buildLanguageInstruction(languageName: string): string {
+  if (!languageName || languageName === "English") return "";
+  return `CRITICAL LANGUAGE REQUIREMENT (highest priority — overrides everything else):
+You MUST write your ENTIRE response in ${languageName}.
+- Every heading, bullet point, table cell, sentence, and explanation must be in ${languageName}.
+- Technical terms (model names, dataset names, metric names like F1, mAP, BLEU, proper nouns) may remain in English only when no standard ${languageName} equivalent exists — but the surrounding prose must be in ${languageName}.
+- Score labels like "Novelty: 8/10" should have the label translated to ${languageName}.
+- Do NOT produce any English sentences in the body of your answer.
+- Do NOT start with an English sentence and then switch languages.
+- The user's interface language is ${languageName} — honour it completely.`;
+}
+
 const MODE_INSTRUCTIONS: Record<AIMode, string> = {
   student: `BEHAVIOR MODE = STUDENT TUTOR.
 - Use simple, plain language a BE/BTech student understands. Define jargon.
@@ -77,21 +92,13 @@ OUTPUT FORMAT when COMPARING papers:
 (repeat per paper)
 
 **Winner**: Paper N
-**Reason**: 2–4 short bullets (stronger methodology / better dataset / higher impact / better novelty / etc.)
+**Reason**: 2–4 short bullets
 **Confidence**: X/10
 
 STRICT REVIEWER RULES — do NOT generate any of these unless the user EXPLICITLY asks for them by name:
-- Problem Statement
-- Research Questions
-- Proposed Methodology
-- Proposed Experiments
-- Future Work
-- Research Proposal / Project Ideas / Final-year project plan
-- Reading Order
-- Viva Questions / Interview Questions
-- Literature Review / PPT outline
-
-If the user asks "would you accept this paper?", "review this paper", "evaluate methodology", "evaluate dataset", "which paper is better?", "suggest a publishable research idea", or anything similar — respond ONLY in the reviewer format above. Do not switch into researcher/professor behavior. No closing pleasantries, no follow-up suggestions.`,
+- Problem Statement, Research Questions, Proposed Methodology, Proposed Experiments
+- Future Work, Research Proposal / Project Ideas / Final-year project plan
+- Reading Order, Viva Questions / Interview Questions, Literature Review / PPT outline`,
 
   professor: `BEHAVIOR MODE = UNIVERSITY PROFESSOR / MENTOR.
 - Frame the answer as academic mentoring with depth.
@@ -102,36 +109,13 @@ If the user asks "would you accept this paper?", "review this paper", "evaluate 
 
 // All 27+ supported intents
 export const INTENTS = [
-  "summary",
-  "abstract_summary",
-  "problem_statement",
-  "objectives",
-  "research_gap",
-  "methodology",
-  "dataset",
-  "technical_deep_dive",
-  "results",
-  "key_findings",
-  "advantages",
-  "limitations",
-  "future_scope",
-  "novel_contribution",
-  "applications",
-  "viva_questions",
-  "interview_questions",
-  "ppt_content",
-  "literature_review",
-  "final_year_project",
-  "research_analytics",
-  "keywords",
-  "figure_explanation",
-  "table_explanation",
-  "citation_analysis",
-  "comparison",
-  "reviewer_opinion",
-  "authors",
-  "full_report",
-  "general",
+  "summary", "abstract_summary", "problem_statement", "objectives", "research_gap",
+  "methodology", "dataset", "technical_deep_dive", "results", "key_findings",
+  "advantages", "limitations", "future_scope", "novel_contribution", "applications",
+  "viva_questions", "interview_questions", "ppt_content", "literature_review",
+  "final_year_project", "research_analytics", "keywords", "figure_explanation",
+  "table_explanation", "citation_analysis", "comparison", "reviewer_opinion",
+  "authors", "full_report", "general",
 ] as const;
 export type Intent = (typeof INTENTS)[number];
 
@@ -182,12 +166,7 @@ export type ResponseSize = "short" | "medium" | "long";
 export function classifySize(question: string, intent: Intent): ResponseSize {
   if (intent === "full_report") return "long";
   const words = question.trim().split(/\s+/).length;
-  const longIntents: Intent[] = [
-    "literature_review",
-    "final_year_project",
-    "ppt_content",
-    "technical_deep_dive",
-  ];
+  const longIntents: Intent[] = ["literature_review", "final_year_project", "ppt_content", "technical_deep_dive"];
   if (longIntents.includes(intent)) return "long";
   if (words <= 8) return "short";
   if (words <= 25) return "medium";
@@ -236,23 +215,32 @@ const INTENT_FOCUS: Partial<Record<Intent, string>> = {
   general: "Answer ONLY what the user asked. Do not pad with unrelated sections.",
 };
 
+/**
+ * Build behavior instructions for a given question + mode + language.
+ * @param question  The user's question text.
+ * @param mode      AI mode (student | researcher | reviewer | professor).
+ * @param languageName  Full English name of the UI language, e.g. "Hindi", "Kannada".
+ *                      Pass undefined or "English" to get English responses.
+ */
 export function buildBehaviorInstructions(
   question: string,
   mode: AIMode = "student",
+  languageName?: string,
 ): { intent: Intent; size: ResponseSize; instructions: string } {
   const intent = classifyIntent(question);
   let size = classifySize(question, intent);
 
-  // Reviewer mode always produces the full reviewer format; never let
-  // intent focus shrink it into a plain description.
   if (mode === "reviewer" && size === "short") size = "medium";
 
   const focus =
     mode === "reviewer"
-      ? `The user's request maps to INTENT=${intent.toUpperCase()}. Respond ONLY in the REVIEWER OUTPUT FORMAT defined above. If the request narrows the evaluation (e.g. "evaluate methodology" or "evaluate dataset"), keep the same reviewer headings (Scores, Strengths, Weaknesses, Major Concerns, Minor Concerns, Reviewer Decision, Confidence) but weight the critique toward that aspect. Do NOT produce Problem Statement, Research Questions, Proposed Methodology, Future Work, project ideas, viva questions or reading order.`
+      ? `The user's request maps to INTENT=${intent.toUpperCase()}. Respond ONLY in the REVIEWER OUTPUT FORMAT defined above. If the request narrows the evaluation (e.g. "evaluate methodology" or "evaluate dataset"), keep the same reviewer headings but weight the critique toward that aspect. Do NOT produce Problem Statement, Research Questions, Proposed Methodology, Future Work, project ideas, viva questions or reading order.`
       : (INTENT_FOCUS[intent] ?? INTENT_FOCUS.general!);
 
-  const instructions = `${MODE_INSTRUCTIONS[mode]}
+  // Build language directive — placed FIRST so it takes top priority
+  const langDirective = buildLanguageInstruction(languageName ?? "English");
+
+  const instructions = `${langDirective ? langDirective + "\n\n" : ""}${MODE_INSTRUCTIONS[mode]}
 
 INTENT = ${intent.toUpperCase()}. ${focus}
 
@@ -266,5 +254,6 @@ STRICT OUTPUT RULES (non-negotiable):
 - Match the requested length. Do not produce a multi-section report for a small question.
 - Stay grounded in the provided paper(s). If something is not in the paper, say so briefly.
 - When you are done answering, STOP. No closing pleasantries, no meta commentary.`;
+
   return { intent, size, instructions };
 }

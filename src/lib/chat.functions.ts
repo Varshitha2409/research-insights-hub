@@ -2,16 +2,17 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { RESEARCH_MIND_PROMPT } from "@/config/systemPrompt";
-import { AI_MODES, buildBehaviorInstructions } from "@/lib/aiBehavior";
+import { AI_MODES, buildBehaviorInstructions, buildLanguageInstruction } from "@/lib/aiBehavior";
 
 const Input = z.object({
   paperId: z.string().uuid(),
   question: z.string().min(1).max(4000),
   mode: z.enum(AI_MODES).optional().default("student"),
+  /** Full English name of the UI language, e.g. "Hindi", "Kannada", "English" */
+  lang: z.string().optional().default("English"),
 });
 
 // Direct Gemini API — no Lovable credits needed.
-// Uses Google's OpenAI-compatible endpoint so the message format is identical.
 async function callGeminiDirect(messages: { role: string; content: string }[]) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("AI is not configured. Set GEMINI_API_KEY in your environment.");
@@ -24,10 +25,7 @@ async function callGeminiDirect(messages: { role: string; content: string }[]) {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        model: "gemini-2.5-flash",
-        messages,
-      }),
+      body: JSON.stringify({ model: "gemini-2.5-flash", messages }),
     },
   );
 
@@ -57,7 +55,21 @@ export const askPaper = createServerFn({ method: "POST" })
     if (error || !paper) throw new Error("Paper not found");
 
     const context_text = (paper.extracted_text ?? "").slice(0, 120_000);
-    const { instructions, intent, size } = buildBehaviorInstructions(data.question, data.mode);
+
+    // Pass the UI language into behavior instructions so the language directive
+    // is embedded at the top of the system prompt.
+    const { instructions, intent, size } = buildBehaviorInstructions(
+      data.question,
+      data.mode,
+      data.lang,
+    );
+
+    // Also build a standalone language reminder appended to the user message,
+    // reinforcing the instruction in case the system prompt is deprioritised.
+    const langReminder =
+      data.lang && data.lang !== "English"
+        ? `\n\n[REMINDER: Your entire response MUST be in ${data.lang}. Do not use English except for proper nouns and technical terms that have no ${data.lang} equivalent.]`
+        : "";
 
     const systemPrompt = `${RESEARCH_MIND_PROMPT}
 
@@ -69,7 +81,7 @@ ${instructions}`;
 ${context_text}
 --- END PAPER ---
 
-Student question: ${data.question}`;
+Student question: ${data.question}${langReminder}`;
 
     const answer = await callGeminiDirect([
       { role: "system", content: systemPrompt },

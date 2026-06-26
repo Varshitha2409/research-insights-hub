@@ -18,7 +18,7 @@ import { TTSSpeaker } from "@/components/TTSSpeaker";
 import { CitationPanel } from "@/components/CitationPanel";
 import { QualityScore, parseScores } from "@/components/QualityScore";
 import { KnowledgeGraph } from "@/components/KnowledgeGraph";
-import { useLanguage } from "@/components/LanguageProvider";
+import { useLanguage, LANG_NAME } from "@/components/LanguageProvider";
 
 type Paper = { id: string; title: string; uploaded_at: string; extracted_text?: string };
 type Msg = { role: "user" | "assistant"; content: string };
@@ -40,7 +40,7 @@ const QUICK_ACTIONS = [
 function Workspace() {
   const { id } = Route.useParams();
   const ask = useServerFn(askPaper);
-  const { t, bcp47 } = useLanguage();
+  const { t, bcp47, lang } = useLanguage();
 
   const [paper, setPaper] = useState<Paper | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -84,7 +84,7 @@ function Workspace() {
     setMessages((m) => [...m, { role: "user", content: question }]);
     setInput("");
     try {
-      const res = await ask({ data: { paperId: id, question, mode } });
+      const res = await ask({ data: { paperId: id, question, mode, lang: LANG_NAME[lang] } });
       setMessages((m) => [...m, { role: "assistant", content: res.answer }]);
       // Auto-detect quality scores if reviewer mode
       const scores = parseScores(res.answer);
