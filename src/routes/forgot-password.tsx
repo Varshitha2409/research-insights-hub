@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/components/LanguageProvider";
 
 export const Route = createFileRoute("/forgot-password")({
   head: () => ({ meta: [{ title: "Forgot Password — ResearchMind AI" }] }),
@@ -13,6 +14,7 @@ export const Route = createFileRoute("/forgot-password")({
 });
 
 function ForgotPasswordPage() {
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -27,7 +29,7 @@ function ForgotPasswordPage() {
       if (error) throw error;
       setSent(true);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to send reset link");
+      toast.error(err instanceof Error ? err.message : t("failedToSend"));
     } finally {
       setLoading(false);
     }
@@ -48,27 +50,26 @@ function ForgotPasswordPage() {
             <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-green-500/10 text-green-600">
               <CheckCircle2 className="h-7 w-7" />
             </div>
-            <h1 className="text-2xl font-semibold">Check your email</h1>
+            <h1 className="text-2xl font-semibold">{t("checkYourEmail")}</h1>
             <p className="text-sm text-muted-foreground">
-              If an account exists for <span className="font-medium text-foreground">{email}</span>, we've sent a password reset link.
-              The link expires in 15 minutes.
+              {t("checkEmailBody")}
             </p>
             <Button asChild variant="outline" className="w-full">
               <Link to="/auth" search={{ mode: "login" }}>
-                <ArrowLeft className="mr-2 h-4 w-4" /> Back to sign in
+                <ArrowLeft className="mr-2 h-4 w-4" /> {t("backToSignIn")}
               </Link>
             </Button>
           </div>
         ) : (
           <>
-            <h1 className="text-2xl font-semibold">Forgot your password?</h1>
+            <h1 className="text-2xl font-semibold">{t("forgotYourPassword")}</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Enter your email and we'll send you a secure link to reset your password.
+              {t("forgotSubtitle")}
             </p>
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t("email")}</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
@@ -79,19 +80,19 @@ function ForgotPasswordPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-9"
-                    placeholder="you@example.com"
+                    placeholder={t("emailPlaceholder")}
                   />
                 </div>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Sending reset link..." : "Send reset link"}
+                {loading ? t("sendingLink") : t("sendResetLink")}
               </Button>
             </form>
 
             <p className="mt-6 text-center text-sm text-muted-foreground">
-              Remembered it?{" "}
+              {t("rememberedIt")}{" "}
               <Link to="/auth" search={{ mode: "login" }} className="text-primary hover:underline">
-                Back to sign in
+                {t("backToSignIn")}
               </Link>
             </p>
           </>

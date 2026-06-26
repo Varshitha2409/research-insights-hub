@@ -5,6 +5,7 @@ import { UploadCloud, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { extractPdfText } from "@/lib/pdf-extract";
 import { toast } from "sonner";
+import { useLanguage } from "@/components/LanguageProvider";
 
 export const Route = createFileRoute("/_authenticated/upload")({
   head: () => ({ meta: [{ title: "Upload paper — ResearchMind AI" }] }),
@@ -13,29 +14,30 @@ export const Route = createFileRoute("/_authenticated/upload")({
 
 function UploadPage() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [busy, setBusy] = useState(false);
   const [stage, setStage] = useState("");
 
   async function handleFile(file: File) {
-    if (file.type !== "application/pdf") return toast.error("Please upload a PDF file.");
-    if (file.size > 25 * 1024 * 1024) return toast.error("File must be under 25 MB.");
+    if (file.type !== "application/pdf") return toast.error(t("notPdf"));
+    if (file.size > 25 * 1024 * 1024) return toast.error(t("tooLarge"));
 
     setBusy(true);
     try {
-      setStage("Extracting text from PDF...");
+      setStage(t("extractingText"));
       const text = await extractPdfText(file);
-      if (!text.trim()) throw new Error("Couldn't extract any text from this PDF.");
+      if (!text.trim()) throw new Error(t("noTextExtracted"));
 
-      setStage("Uploading file...");
+      setStage(t("uploadingFile"));
       const { data: u } = await supabase.auth.getUser();
-      if (!u.user) throw new Error("Not signed in");
+      if (!u.user) throw new Error(t("notSignedIn"));
       const path = `${u.user.id}/${crypto.randomUUID()}-${file.name}`;
       const up = await supabase.storage.from("papers").upload(path, file, { contentType: "application/pdf" });
       if (up.error) throw up.error;
 
-      setStage("Saving paper...");
+      setStage(t("savingPaper"));
       const title = file.name.replace(/\.pdf$/i, "");
       const { data: inserted, error } = await supabase
         .from("papers")
@@ -44,10 +46,10 @@ function UploadPage() {
         .single();
       if (error) throw error;
 
-      toast.success("Paper uploaded!");
+      toast.success(t("paperUploaded"));
       navigate({ to: "/paper/$id", params: { id: inserted.id } });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Upload failed");
+      toast.error(e instanceof Error ? e.message : t("uploadFailed"));
     } finally {
       setBusy(false); setStage("");
     }
@@ -55,8 +57,8 @@ function UploadPage() {
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-12">
-      <h1 className="text-3xl font-semibold">Upload a research paper</h1>
-      <p className="mt-1 text-sm text-muted-foreground">PDF only, up to 25 MB. Text is extracted in your browser.</p>
+      <h1 className="text-3xl font-semibold">{t("uploadPageTitle")}</h1>
+      <p className="mt-1 text-sm text-muted-foreground">{t("uploadPageSubtitle")}</p>
 
       <label
         htmlFor="rm-file-input"
@@ -74,15 +76,15 @@ function UploadPage() {
           <>
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
             <p className="mt-4 font-medium">{stage}</p>
-            <p className="mt-1 text-xs text-muted-foreground">Please don't close this tab.</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t("dontCloseTab")}</p>
           </>
         ) : (
           <>
             <UploadCloud className="h-10 w-10 text-primary" />
-            <p className="mt-4 font-medium">Drag & drop your PDF here</p>
-            <p className="mt-1 text-xs text-muted-foreground">or click anywhere in this box to browse</p>
+            <p className="mt-4 font-medium">{t("dragDrop")}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t("orClickBrowse")}</p>
             <span className="mt-6 inline-flex h-10 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground">
-              Choose file
+              {t("chooseFile")}
             </span>
           </>
         )}

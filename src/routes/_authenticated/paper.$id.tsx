@@ -28,13 +28,13 @@ export const Route = createFileRoute("/_authenticated/paper/$id")({
   component: Workspace,
 });
 
-const QUICK_ACTIONS = [
-  { label: "Summary",          icon: ListChecks,   prompt: "Give me a complete structured summary of this paper (problem, methodology, key results, limitations, conclusion)." },
-  { label: "Gaps",             icon: Lightbulb,    prompt: "List the research gaps and open problems in this paper that a BE/BTech student could explore." },
-  { label: "Viva Prep",        icon: GraduationCap,prompt: "Prepare me for a viva on this paper. Give 10 likely questions with concise, confident answers." },
-  { label: "PPT",              icon: Presentation, prompt: "Draft a 10-slide PPT outline (slide title + 3-5 bullet points each) covering this paper for a class presentation." },
-  { label: "Project Converter",icon: Rocket,       prompt: "Convert the ideas in this paper into a concrete BE/BTech final-year project plan: problem statement, modules, tech stack, datasets, milestones, and novelty." },
-  { label: "Quality Score",    icon: Award,        prompt: "Review this paper as a journal reviewer. Give me Novelty, Methodology, Dataset Quality, Research Impact, Feasibility and Technical Soundness scores out of 10, then an Overall score and Reviewer Decision." },
+const QUICK_ACTION_DEFS = [
+  { labelKey: "summaryAction" as const,          icon: ListChecks,   prompt: "Give me a complete structured summary of this paper (problem, methodology, key results, limitations, conclusion)." },
+  { labelKey: "gapsAction" as const,             icon: Lightbulb,    prompt: "List the research gaps and open problems in this paper that a BE/BTech student could explore." },
+  { labelKey: "vivaPrepAction" as const,         icon: GraduationCap,prompt: "Prepare me for a viva on this paper. Give 10 likely questions with concise, confident answers." },
+  { labelKey: "pptAction" as const,              icon: Presentation, prompt: "Draft a 10-slide PPT outline (slide title + 3-5 bullet points each) covering this paper for a class presentation." },
+  { labelKey: "projectConverterAction" as const, icon: Rocket,       prompt: "Convert the ideas in this paper into a concrete BE/BTech final-year project plan: problem statement, modules, tech stack, datasets, milestones, and novelty." },
+  { labelKey: "qualityScoreAction" as const,     icon: Award,        prompt: "Review this paper as a journal reviewer. Give me Novelty, Methodology, Dataset Quality, Research Impact, Feasibility and Technical Soundness scores out of 10, then an Overall score and Reviewer Decision." },
 ];
 
 function Workspace() {
@@ -90,14 +90,14 @@ function Workspace() {
       const scores = parseScores(res.answer);
       if (scores) setQualityScores(scores);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "AI request failed");
+      toast.error(e instanceof Error ? e.message : t("aiRequestFailed"));
       setMessages((m) => m.slice(0, -1));
     } finally {
       setSending(false);
     }
   }
 
-  const micLabel = voice.state === "listening" ? "Listening… (click to stop)" : t("voiceInput");
+  const micLabel = voice.state === "listening" ? t("listeningStop") : t("voiceInput");
 
   return (
     <div className="mx-auto flex h-[calc(100vh-3.5rem)] max-w-[1400px] gap-3 px-3 py-3">
@@ -111,20 +111,20 @@ function Workspace() {
             <FileText className="h-4 w-4" />
           </span>
           <div className="min-w-0">
-            <div className="line-clamp-3 text-sm font-semibold">{paper?.title ?? "Loading..."}</div>
+            <div className="line-clamp-3 text-sm font-semibold">{paper?.title ?? t("loading")}</div>
             <div className="mt-1 text-xs text-muted-foreground">
               {paper && new Date(paper.uploaded_at).toLocaleDateString()}
             </div>
           </div>
         </div>
 
-        <div className="mt-5 text-xs font-medium uppercase tracking-wider text-muted-foreground">Quick actions</div>
+        <div className="mt-5 text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("quickActions")}</div>
         <div className="mt-2 grid gap-1.5">
-          {QUICK_ACTIONS.map((a) => (
-            <button key={a.label} onClick={() => send(a.prompt)}
+          {QUICK_ACTION_DEFS.map((a) => (
+            <button key={a.labelKey} onClick={() => send(a.prompt)}
               disabled={sending || !paper}
               className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent disabled:opacity-50">
-              <a.icon className="h-4 w-4 text-primary" /> {a.label}
+              <a.icon className="h-4 w-4 text-primary" /> {t(a.labelKey)}
             </button>
           ))}
         </div>
@@ -174,7 +174,7 @@ function Workspace() {
               <div className="mx-auto mt-10 max-w-md text-center">
                 <Sparkles className="mx-auto h-8 w-8 text-primary" />
                 <h2 className="mt-3 text-lg font-semibold">{t("askAnything")}</h2>
-                <p className="mt-1 text-sm text-muted-foreground">Try a quick action on the left, or type a question below.</p>
+                <p className="mt-1 text-sm text-muted-foreground">{t("tryQuickAction")}</p>
               </div>
             )}
             {messages.map((m, i) => (

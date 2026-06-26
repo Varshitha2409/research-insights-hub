@@ -89,23 +89,23 @@ function ComparePage() {
   function toggleSelected(id: string) {
     const next = new Set(selected);
     next.has(id) ? next.delete(id) : next.add(id);
-    if (next.size > 5) return toast.error("Pick up to 5 papers");
+    if (next.size > 5) return toast.error(t("pickUpTo5"));
     setSelected(next);
   }
 
   async function startNew() {
-    if (selected.size < 2) return toast.error("Select at least 2 papers");
+    if (selected.size < 2) return toast.error(t("selectAtLeast2"));
     setCreating(true);
     try {
       const res = await createFn({
         data: { paperIds: Array.from(selected), focus: focus || undefined, mode, lang: LANG_NAME[lang] },
       });
-      toast.success("Comparison created");
+      toast.success(t("comparisonCreated"));
       setSelected(new Set()); setFocus(""); setShowNew(false);
       await loadHistory();
       await openComparison(res.id);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Comparison failed");
+      toast.error(e instanceof Error ? e.message : t("comparisonFailed"));
     } finally { setCreating(false); }
   }
 
@@ -120,26 +120,26 @@ function ComparePage() {
       setMessages((m) => [...m, { role: "assistant", content: res.answer }]);
       loadHistory();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "AI request failed");
+      toast.error(e instanceof Error ? e.message : t("aiRequestFailed"));
       setMessages((m) => m.slice(0, -1));
     } finally { setSending(false); }
   }
 
   async function rename(c: Comparison) {
-    const title = window.prompt("Rename comparison", c.title);
+    const title = window.prompt(t("renameComparison"), c.title);
     if (!title || title === c.title) return;
     try {
       await renameFn({ data: { id: c.id, title } });
       await loadHistory();
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Rename failed"); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : t("renameFailed")); }
   }
   async function remove(c: Comparison) {
-    if (!window.confirm(`Delete "${c.title}"? This can't be undone.`)) return;
+    if (!window.confirm(t("deleteComparisonConfirm"))) return;
     try {
       await deleteFn({ data: { id: c.id } });
       if (activeId === c.id) { setActiveId(null); setMessages([]); }
       await loadHistory();
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Delete failed"); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : t("deleteFailed")); }
   }
 
   const filtered = history.filter((c) => c.title.toLowerCase().includes(search.toLowerCase()));
@@ -205,12 +205,12 @@ function ComparePage() {
         {(showNew || (!activeId && history.length === 0)) && (
           <div className="overflow-y-auto p-5">
             <h1 className="flex items-center gap-2 text-2xl font-semibold">
-              <GitCompare className="h-6 w-6 text-primary" /> New comparison
+              <GitCompare className="h-6 w-6 text-primary" /> {t("comparePageTitle")}
             </h1>
-            <p className="mt-1 text-sm text-muted-foreground">Pick 2–5 papers. We'll save it so you can continue the chat later.</p>
+            <p className="mt-1 text-sm text-muted-foreground">{t("comparePageSubtitle")}</p>
             <div className="mt-4 rounded-xl border border-border bg-card/60 p-3">
               {papers.length === 0 ? (
-                <p className="p-3 text-sm text-muted-foreground">Upload some papers first.</p>
+                <p className="p-3 text-sm text-muted-foreground">{t("uploadSomePapersFirst")}</p>
               ) : (
                 <ul className="grid gap-2">
                   {papers.map((p) => (
@@ -231,11 +231,11 @@ function ComparePage() {
             <div className="mt-3 flex flex-col gap-2 sm:flex-row">
               <Input
                 value={focus} onChange={(e) => setFocus(e.target.value)}
-                placeholder="Optional focus (e.g. 'datasets', 'accuracy')"
+                placeholder={t("optionalFocus")}
               />
               <Button onClick={startNew} disabled={creating || selected.size < 2}>
                 {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                Compare {selected.size > 0 ? `(${selected.size})` : ""}
+                {t("compareBtn")}{selected.size > 0 ? ` (${selected.size})` : ""}
               </Button>
             </div>
           </div>
@@ -266,7 +266,7 @@ function ComparePage() {
               {sending && (
                 <div className="flex justify-start">
                   <div className="flex items-center gap-2 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" /> Thinking...
+                    <Loader2 className="h-4 w-4 animate-spin" /> {t("thinking")}
                   </div>
                 </div>
               )}
@@ -286,13 +286,13 @@ function ComparePage() {
                   className={`h-11 w-11 flex-shrink-0 ${voice.state === "listening" ? "animate-pulse" : ""}`}
                   onClick={voice.toggle}
                   disabled={voice.state === "unsupported"}
-                  title={voice.state === "listening" ? "Listening… click to stop" : "Voice input"}>
+                  title={voice.state === "listening" ? t("listeningStop") : t("voiceInput")}>
                   {voice.state === "listening" ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                 </Button>
                 <Textarea
                   value={input} onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-                  placeholder="Ask a follow-up about these papers... (e.g. 'Which dataset is better?')"
+                  placeholder={t("compareFollowupPlaceholder")}
                   rows={1} className="max-h-40 min-h-[44px] resize-none" disabled={sending}
                 />
                 <Button type="submit" disabled={sending || !input.trim()}>
@@ -308,7 +308,7 @@ function ComparePage() {
           <div className="flex flex-1 items-center justify-center p-10 text-center">
             <div>
               <Sparkles className="mx-auto h-8 w-8 text-primary" />
-              <p className="mt-3 text-sm text-muted-foreground">Open a comparison from the sidebar, or start a new one.</p>
+              <p className="mt-3 text-sm text-muted-foreground">{t("openOrStartNew")}</p>
             </div>
           </div>
         )}

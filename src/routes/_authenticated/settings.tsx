@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { PasswordField } from "@/components/PasswordField";
 import { isPasswordValid } from "@/lib/passwordStrength";
+import { useLanguage } from "@/components/LanguageProvider";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings — ResearchMind AI" }] }),
@@ -14,6 +15,7 @@ export const Route = createFileRoute("/_authenticated/settings")({
 
 function SettingsPage() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [email, setEmail] = useState<string | null>(null);
   const [createdAt, setCreatedAt] = useState<string | null>(null);
   const [paperCount, setPaperCount] = useState<number | null>(null);
@@ -26,19 +28,19 @@ function SettingsPage() {
   async function changePassword(e: React.FormEvent) {
     e.preventDefault();
     if (!email) return;
-    if (!isPasswordValid(newPwd)) return toast.error("New password does not meet all requirements");
-    if (newPwd !== confirmPwd) return toast.error("Passwords do not match");
+    if (!isPasswordValid(newPwd)) return toast.error(t("passwordDoesNotMeet"));
+    if (newPwd !== confirmPwd) return toast.error(t("passwordsDoNotMatch"));
     setPwdBusy(true);
     try {
       // Verify current password by re-authenticating.
       const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password: currentPwd });
-      if (signInErr) throw new Error("Current password is incorrect");
+      if (signInErr) throw new Error(t("incorrectCurrentPassword"));
       const { error } = await supabase.auth.updateUser({ password: newPwd });
       if (error) throw error;
-      toast.success("Password updated successfully");
+      toast.success(t("passwordUpdatedSuccess"));
       setCurrentPwd(""); setNewPwd(""); setConfirmPwd("");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update password");
+      toast.error(err instanceof Error ? err.message : t("failedToUpdatePassword"));
     } finally {
       setPwdBusy(false);
     }
@@ -60,54 +62,54 @@ function SettingsPage() {
   }
 
   async function clearAllPapers() {
-    if (!confirm("Delete ALL your papers and conversations? This cannot be undone.")) return;
+    if (!confirm(t("deleteAllConfirm"))) return;
     setBusy(true);
     const { error } = await supabase.from("papers").delete().not("id", "is", null);
     setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success("All papers deleted");
+    toast.success(t("allPapersDeleted"));
     setPaperCount(0);
   }
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="text-3xl font-semibold">Settings</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Manage your account and data.</p>
+      <h1 className="text-3xl font-semibold">{t("settingsTitle")}</h1>
+      <p className="mt-1 text-sm text-muted-foreground">{t("settingsSubtitle")}</p>
 
       <section className="mt-8 rounded-2xl border border-border bg-card/60 p-6">
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Account</h2>
-        <Row icon={Mail} label="Email" value={email ?? "—"} />
-        <Row icon={User} label="Member since" value={createdAt ? new Date(createdAt).toLocaleDateString() : "—"} />
-        <Row icon={User} label="Papers" value={paperCount ?? "—"} />
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">{t("account")}</h2>
+        <Row icon={Mail} label={t("email")} value={email ?? "—"} />
+        <Row icon={User} label={t("memberSince")} value={createdAt ? new Date(createdAt).toLocaleDateString() : "—"} />
+        <Row icon={User} label={t("papers")} value={paperCount ?? "—"} />
         <Button variant="outline" className="mt-4" onClick={signOut}>
-          <LogOut className="mr-2 h-4 w-4" /> Sign out
+          <LogOut className="mr-2 h-4 w-4" /> {t("signOut")}
         </Button>
       </section>
 
       <section className="mt-6 rounded-2xl border border-border bg-card/60 p-6">
         <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          <KeyRound className="h-4 w-4" /> Change password
+          <KeyRound className="h-4 w-4" /> {t("changePassword")}
         </h2>
         <form onSubmit={changePassword} className="space-y-4">
-          <PasswordField id="current-pwd" label="Current password" value={currentPwd} onChange={setCurrentPwd} autoComplete="current-password" />
-          <PasswordField id="new-pwd" label="New password" value={newPwd} onChange={setNewPwd} showMeter autoComplete="new-password" />
-          <PasswordField id="confirm-pwd" label="Confirm new password" value={confirmPwd} onChange={setConfirmPwd} autoComplete="new-password" />
+          <PasswordField id="current-pwd" label={t("currentPassword")} value={currentPwd} onChange={setCurrentPwd} autoComplete="current-password" />
+          <PasswordField id="new-pwd" label={t("newPassword")} value={newPwd} onChange={setNewPwd} showMeter autoComplete="new-password" />
+          <PasswordField id="confirm-pwd" label={t("confirmPassword")} value={confirmPwd} onChange={setConfirmPwd} autoComplete="new-password" />
           {confirmPwd && newPwd !== confirmPwd && (
-            <p className="text-xs text-destructive">Passwords do not match.</p>
+            <p className="text-xs text-destructive">{t("passwordsDoNotMatch")}</p>
           )}
           <Button type="submit" disabled={pwdBusy || !currentPwd || !newPwd || !confirmPwd}>
-            {pwdBusy ? "Updating password..." : "Update password"}
+            {pwdBusy ? t("updatingPassword") : t("updatePassword")}
           </Button>
         </form>
       </section>
 
       <section className="mt-6 rounded-2xl border border-destructive/30 bg-destructive/5 p-6">
         <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-destructive">
-          <AlertTriangle className="h-4 w-4" /> Danger zone
+          <AlertTriangle className="h-4 w-4" /> {t("dangerZone")}
         </h2>
-        <p className="text-sm text-muted-foreground">Permanently delete every paper and conversation tied to your account.</p>
+        <p className="text-sm text-muted-foreground">{t("dangerZoneBody")}</p>
         <Button variant="destructive" className="mt-4" onClick={clearAllPapers} disabled={busy || paperCount === 0}>
-          <Trash2 className="mr-2 h-4 w-4" /> Delete all papers
+          <Trash2 className="mr-2 h-4 w-4" /> {t("deleteAllPapers")}
         </Button>
       </section>
     </main>

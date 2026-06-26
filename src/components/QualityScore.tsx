@@ -4,6 +4,7 @@
  */
 
 import { RadialBarChart, RadialBar, PolarAngleAxis, ResponsiveContainer, Cell } from "recharts";
+import { useLanguage, type TranslationKey } from "@/components/LanguageProvider";
 
 export interface ScoreData {
   novelty: number;
@@ -48,13 +49,13 @@ function ScoreCard({ label, value, color }: ScoreCardProps) {
   );
 }
 
-const SCORE_META: { key: keyof ScoreData; label: string; color: string }[] = [
-  { key: "novelty",     label: "Novelty",      color: "#818cf8" },
-  { key: "impact",      label: "Impact",       color: "#34d399" },
-  { key: "methodology", label: "Methodology",  color: "#f59e0b" },
-  { key: "dataset",     label: "Dataset",      color: "#60a5fa" },
-  { key: "citation",    label: "Citations",    color: "#e879f9" },
-  { key: "overall",     label: "Overall",      color: "#fb923c" },
+const SCORE_META_DEFS: { key: keyof ScoreData; labelKey: TranslationKey; color: string }[] = [
+  { key: "novelty",     labelKey: "novelty",        color: "#818cf8" },
+  { key: "impact",      labelKey: "impact",         color: "#34d399" },
+  { key: "methodology", labelKey: "methodology",    color: "#f59e0b" },
+  { key: "dataset",     labelKey: "dataset",        color: "#60a5fa" },
+  { key: "citation",    labelKey: "citationQuality",color: "#e879f9" },
+  { key: "overall",     labelKey: "overall",        color: "#fb923c" },
 ];
 
 interface QualityScoreProps {
@@ -62,26 +63,27 @@ interface QualityScoreProps {
 }
 
 export function QualityScore({ scores }: QualityScoreProps) {
+  const { t } = useLanguage();
   const overall = scores.overall;
-  const verdict =
-    overall >= 8 ? "Excellent — Highly publishable"
-    : overall >= 6 ? "Good — Strong contribution"
-    : overall >= 4 ? "Fair — Needs improvements"
-    : "Weak — Major revision required";
+  const verdictKey: TranslationKey =
+    overall >= 8 ? "excellent"
+    : overall >= 6 ? "good"
+    : overall >= 4 ? "fair"
+    : "weak";
 
   return (
     <div className="rounded-2xl border border-border bg-card/60 p-5">
       <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-        Research Quality Score
+        {t("researchQualityScore")}
       </h3>
       <div className="mb-4 grid grid-cols-3 gap-4 sm:grid-cols-6">
-        {SCORE_META.map(({ key, label, color }) => (
-          <ScoreCard key={key} label={label} value={scores[key]} color={color} />
+        {SCORE_META_DEFS.map(({ key, labelKey, color }) => (
+          <ScoreCard key={key} label={t(labelKey)} value={scores[key]} color={color} />
         ))}
       </div>
       <div className="rounded-lg border border-border bg-muted/20 px-4 py-2 text-center text-sm">
         <span className="font-semibold" style={{ color: overall >= 6 ? "#34d399" : "#f59e0b" }}>
-          {verdict}
+          {t(verdictKey)}
         </span>
       </div>
     </div>

@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { FileText, MessageSquare, Sparkles, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/components/LanguageProvider";
 
 export const Route = createFileRoute("/_authenticated/insights")({
   head: () => ({ meta: [{ title: "Insights — ResearchMind AI" }] }),
@@ -16,6 +17,7 @@ type Stats = {
 };
 
 function InsightsPage() {
+  const { t } = useLanguage();
   const [s, setS] = useState<Stats | null>(null);
 
   useEffect(() => {
@@ -38,19 +40,19 @@ function InsightsPage() {
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-10">
-      <h1 className="text-3xl font-semibold">Insights</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Your research activity at a glance.</p>
+      <h1 className="text-3xl font-semibold">{t("insightsTitle")}</h1>
+      <p className="mt-1 text-sm text-muted-foreground">{t("insightsSubtitle")}</p>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
-        <StatCard icon={FileText} label="Papers uploaded" value={s?.papers ?? "—"} />
-        <StatCard icon={MessageSquare} label="Questions asked" value={s?.questions ?? "—"} />
-        <StatCard icon={TrendingUp} label="Avg Qs / paper" value={s && s.papers ? (s.questions / s.papers).toFixed(1) : "—"} />
+        <StatCard icon={FileText} label={t("papersUploaded")} value={s?.papers ?? "—"} />
+        <StatCard icon={MessageSquare} label={t("questionsAsked")} value={s?.questions ?? "—"} />
+        <StatCard icon={TrendingUp} label={t("avgPerPaper")} value={s && s.papers ? (s.questions / s.papers).toFixed(1) : "—"} />
       </div>
 
       <div className="mt-8 grid gap-4 md:grid-cols-2">
-        <Panel title="Recent papers">
+        <Panel title={t("recentPapers")}>
           {s?.recentPapers.length === 0 ? (
-            <Empty text="Upload a paper to get started." />
+            <Empty text={t("uploadToGetStarted")} />
           ) : (
             <ul className="space-y-2">
               {s?.recentPapers.map((p) => (
@@ -65,9 +67,9 @@ function InsightsPage() {
           )}
         </Panel>
 
-        <Panel title="Recent questions">
+        <Panel title={t("recentQuestions")}>
           {s?.recentQs.length === 0 ? (
-            <Empty text="Ask your first AI question on a paper." />
+            <Empty text={t("askFirstQuestion")} />
           ) : (
             <ul className="space-y-2">
               {s?.recentQs.map((q, i) => (

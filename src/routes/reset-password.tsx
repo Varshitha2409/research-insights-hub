@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { PasswordField } from "@/components/PasswordField";
 import { isPasswordValid } from "@/lib/passwordStrength";
+import { useLanguage } from "@/components/LanguageProvider";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({ meta: [{ title: "Reset Password — ResearchMind AI" }] }),
@@ -14,6 +15,7 @@ export const Route = createFileRoute("/reset-password")({
 
 function ResetPasswordPage() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [pwd, setPwd] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
@@ -38,11 +40,11 @@ function ResetPasswordPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!isPasswordValid(pwd)) {
-      toast.error("Password does not meet all requirements");
+      toast.error(t("passwordRequirements"));
       return;
     }
     if (pwd !== confirm) {
-      toast.error("Passwords do not match");
+      toast.error(t("passwordsDoNotMatch"));
       return;
     }
     setLoading(true);
@@ -53,7 +55,7 @@ function ResetPasswordPage() {
       await supabase.auth.signOut();
       setDone(true);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update password");
+      toast.error(err instanceof Error ? err.message : t("failedToUpdatePassword"));
     } finally {
       setLoading(false);
     }
@@ -74,12 +76,12 @@ function ResetPasswordPage() {
             <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-green-500/10 text-green-600">
               <CheckCircle2 className="h-7 w-7" />
             </div>
-            <h1 className="text-2xl font-semibold">Password updated</h1>
+            <h1 className="text-2xl font-semibold">{t("passwordUpdated")}</h1>
             <p className="text-sm text-muted-foreground">
-              Your password has been changed. Please sign in again with your new password.
+              {t("passwordUpdatedBody")}
             </p>
             <Button className="w-full" onClick={() => navigate({ to: "/auth", search: { mode: "login" } })}>
-              Go to sign in
+              {t("goToSignIn")}
             </Button>
           </div>
         ) : tokenStatus === "invalid" ? (
@@ -87,28 +89,28 @@ function ResetPasswordPage() {
             <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-destructive/10 text-destructive">
               <AlertTriangle className="h-7 w-7" />
             </div>
-            <h1 className="text-2xl font-semibold">Link expired or invalid</h1>
+            <h1 className="text-2xl font-semibold">{t("linkExpired")}</h1>
             <p className="text-sm text-muted-foreground">
-              This password reset link has expired or already been used. Please request a new one.
+              {t("linkExpiredBody")}
             </p>
             <Button asChild className="w-full">
-              <Link to="/forgot-password">Request a new link</Link>
+              <Link to="/forgot-password">{t("requestNewLink")}</Link>
             </Button>
           </div>
         ) : (
           <>
-            <h1 className="text-2xl font-semibold">Set a new password</h1>
+            <h1 className="text-2xl font-semibold">{t("setNewPassword")}</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Choose a strong password you haven't used before.
+              {t("chooseStrongPassword")}
             </p>
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-              <PasswordField id="pwd" label="New password" value={pwd} onChange={setPwd} showMeter autoComplete="new-password" />
-              <PasswordField id="confirm" label="Confirm new password" value={confirm} onChange={setConfirm} autoComplete="new-password" />
+              <PasswordField id="pwd" label={t("newPassword")} value={pwd} onChange={setPwd} showMeter autoComplete="new-password" />
+              <PasswordField id="confirm" label={t("confirmNewPassword")} value={confirm} onChange={setConfirm} autoComplete="new-password" />
               {confirm && pwd !== confirm && (
-                <p className="text-xs text-destructive">Passwords do not match.</p>
+                <p className="text-xs text-destructive">{t("passwordsDoNotMatch")}</p>
               )}
               <Button type="submit" className="w-full" disabled={loading || tokenStatus !== "valid"}>
-                {loading ? "Updating password..." : "Change password"}
+                {loading ? t("updatingPassword") : t("changePassword")}
               </Button>
             </form>
           </>

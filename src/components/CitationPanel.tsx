@@ -9,6 +9,7 @@ import { Copy, Download, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { useLanguage } from "@/components/LanguageProvider";
 
 export interface PaperMeta {
   title: string;
@@ -170,6 +171,7 @@ interface Props {
 }
 
 export function CitationPanel({ title, extractedText = "" }: Props) {
+  const { t } = useLanguage();
   const meta = extractMeta(title, extractedText);
   const [copied, setCopied] = useState<CitationFormat | null>(null);
 
@@ -177,7 +179,7 @@ export function CitationPanel({ title, extractedText = "" }: Props) {
     const text = generate(fmt, meta);
     navigator.clipboard.writeText(text).then(() => {
       setCopied(fmt);
-      toast.success(`${fmt} citation copied`);
+      toast.success(`${fmt} ${t("citationCopied")}`);
       setTimeout(() => setCopied(null), 2000);
     });
   }
@@ -195,7 +197,7 @@ export function CitationPanel({ title, extractedText = "" }: Props) {
   return (
     <div className="rounded-2xl border border-border bg-card/60 p-4">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Citation</h3>
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{t("citationPanel")}</h3>
         {meta.doi && (
           <a href={`https://doi.org/${meta.doi}`} target="_blank" rel="noopener noreferrer"
             className="text-xs text-primary hover:underline">
@@ -206,10 +208,10 @@ export function CitationPanel({ title, extractedText = "" }: Props) {
 
       {/* Detected metadata */}
       <div className="mb-3 grid grid-cols-2 gap-1 text-xs text-muted-foreground">
-        {meta.authors && <span><b>Authors:</b> {meta.authors.slice(0,3).join(", ")}{meta.authors.length > 3 ? " et al." : ""}</span>}
-        {meta.year    && <span><b>Year:</b> {meta.year}</span>}
-        {meta.journal && <span className="col-span-2"><b>Venue:</b> {meta.journal.slice(0,60)}</span>}
-        {meta.pages   && <span><b>Pages:</b> {meta.pages}</span>}
+        {meta.authors && <span><b>{t("authors")}:</b> {meta.authors.slice(0,3).join(", ")}{meta.authors.length > 3 ? " et al." : ""}</span>}
+        {meta.year    && <span><b>{t("year")}:</b> {meta.year}</span>}
+        {meta.journal && <span className="col-span-2"><b>{t("venue")}:</b> {meta.journal.slice(0,60)}</span>}
+        {meta.pages   && <span><b>{t("pages")}:</b> {meta.pages}</span>}
       </div>
 
       <Tabs defaultValue="IEEE">
@@ -224,10 +226,10 @@ export function CitationPanel({ title, extractedText = "" }: Props) {
             <div className="flex gap-2">
               <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs" onClick={() => copy(fmt)}>
                 {copied === fmt ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                {copied === fmt ? "Copied" : "Copy"}
+                {copied === fmt ? t("copied") : t("copy")}
               </Button>
               <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs" onClick={() => download(fmt)}>
-                <Download className="h-3 w-3" /> Download
+                <Download className="h-3 w-3" /> {t("download")}
               </Button>
             </div>
           </TabsContent>

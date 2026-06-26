@@ -53,7 +53,7 @@ function Dashboard() {
   useEffect(() => { load(); }, []);
 
   async function remove(id: string) {
-    if (!confirm("Delete this paper and all its conversations?")) return;
+    if (!confirm(t("deletePaperConfirm"))) return;
     const { error } = await supabase.from("papers").delete().eq("id", id);
     if (error) return toast.error(error.message);
     setPapers((p) => p?.filter((x) => x.id !== id) ?? null);
@@ -63,7 +63,7 @@ function Dashboard() {
   const STAT_CARDS = [
     { label: t("papersUploaded"), value: stats.papers,    icon: BookOpen,      color: "#818cf8" },
     { label: t("questionsAsked"), value: stats.questions,  icon: MessageSquare, color: "#34d399" },
-    { label: "Comparisons",       value: stats.comparisons, icon: BarChart2,    color: "#f59e0b" },
+    { label: t("comparisons"),    value: stats.comparisons, icon: BarChart2,    color: "#f59e0b" },
     { label: t("avgPerPaper"),    value: stats.papers ? (stats.questions/stats.papers).toFixed(1) : "—",
       icon: TrendingUp, color: "#60a5fa" },
   ];
@@ -86,7 +86,7 @@ function Dashboard() {
       {/* Upload activity chart */}
       <div className="mb-6 rounded-2xl border border-border bg-card/60 p-5">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Uploads — Last 7 days
+          {t("uploadsChart")}
         </h2>
         <ResponsiveContainer width="100%" height={140}>
           <BarChart data={chartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
@@ -109,7 +109,7 @@ function Dashboard() {
       <div className="mb-4 flex items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">{t("yourPapers")}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Open a paper to chat, summarise, or prep for viva.</p>
+          <p className="mt-1 text-sm text-muted-foreground">{t("openPaperHint")}</p>
         </div>
         <Button asChild>
           <Link to="/upload"><Plus className="mr-1 h-4 w-4" /> {t("uploadPaper")}</Link>
@@ -124,7 +124,7 @@ function Dashboard() {
         <div className="rounded-2xl border border-dashed border-border bg-card/40 p-12 text-center">
           <FileText className="mx-auto h-10 w-10 text-muted-foreground" />
           <h2 className="mt-4 font-semibold">{t("noPapersYet")}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Upload your first research paper to get started.</p>
+          <p className="mt-1 text-sm text-muted-foreground">{t("noPapersBody")}</p>
           <Button asChild className="mt-6"><Link to="/upload">{t("uploadPaper")}</Link></Button>
         </div>
       ) : (

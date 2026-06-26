@@ -27,7 +27,7 @@ export function LanguageSwitcher() {
             onClick={() => setLang(l.code as LangCode)}
             className={lang === l.code ? "bg-accent font-medium" : ""}
           >
-            {l.label}
+            {l.label} ({l.english})
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

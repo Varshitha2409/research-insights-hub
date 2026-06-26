@@ -4,6 +4,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { useLanguage, type TranslationKey } from "@/components/LanguageProvider";
 
 interface Node { id: string; label: string; group: "keyword"|"author"|"concept"|"algorithm"|"dataset"; x: number; y: number; vx: number; vy: number; }
 interface Edge { source: string; target: string; }
@@ -136,6 +137,7 @@ interface KnowledgeGraphProps {
 }
 
 export function KnowledgeGraph({ title, extractedText }: KnowledgeGraphProps) {
+  const { t } = useLanguage();
   const raw = buildGraphData(title, extractedText);
   const [nodes] = useState(() => simulate(raw.nodes, raw.edges));
   const nodeMap: Record<string, Node> = {};
@@ -147,12 +149,12 @@ export function KnowledgeGraph({ title, extractedText }: KnowledgeGraphProps) {
 
   return (
     <div className="rounded-2xl border border-border bg-card/60 p-4">
-      <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Knowledge Graph</h3>
+      <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">{t("knowledgeGraphTitle")}</h3>
       <div className="mb-2 flex flex-wrap gap-3 text-xs">
         {(Object.keys(GROUP_COLOR) as Array<keyof typeof GROUP_COLOR>).map((g) => (
           <span key={g} className="flex items-center gap-1">
             <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: GROUP_COLOR[g] }} />
-            {g}
+            {t(g as TranslationKey)}
           </span>
         ))}
       </div>

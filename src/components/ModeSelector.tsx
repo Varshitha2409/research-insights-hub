@@ -5,6 +5,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { useLanguage, type TranslationKey } from "@/components/LanguageProvider";
 
 const ICONS: Record<AIMode, React.ComponentType<{ className?: string }>> = {
   student: GraduationCap,
@@ -31,6 +32,7 @@ export function useAIMode(): [AIMode, (m: AIMode) => void] {
 export function ModeSelector({
   mode, onChange, className,
 }: { mode: AIMode; onChange: (m: AIMode) => void; className?: string }) {
+  const { t } = useLanguage();
   const Icon = ICONS[mode];
   return (
     <div className={className}>
@@ -40,14 +42,14 @@ export function ModeSelector({
           const m = v as AIMode;
           if (m !== mode) {
             onChange(m);
-            toast.success(`Switched to ${MODE_LABEL[m]} Mode`);
+            toast.success(`${t("switchedToMode")} ${t(m as TranslationKey)} ${t("mode")}`);
           }
         }}
       >
         <SelectTrigger className="h-10 w-[240px] sm:w-[260px]">
           <span className="flex items-center gap-2 text-sm font-medium">
             <Icon className="h-4 w-4 flex-shrink-0 text-primary" />
-            <SelectValue>{MODE_LABEL[mode]} Mode</SelectValue>
+            <SelectValue>{t(mode as TranslationKey)} {t("mode")}</SelectValue>
           </span>
         </SelectTrigger>
         <SelectContent className="min-w-[320px]">
@@ -58,9 +60,9 @@ export function ModeSelector({
                 <div className="flex items-start gap-2">
                   <I className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
                   <div className="min-w-0">
-                    <div className="text-sm font-semibold">{MODE_LABEL[m]} Mode</div>
+                    <div className="text-sm font-semibold">{t(m as TranslationKey)} {t("mode")}</div>
                     <div className="whitespace-normal text-xs text-muted-foreground">
-                      {MODE_DESCRIPTION[m]}
+                      {t(`modeDescription_${m}` as TranslationKey)}
                     </div>
                   </div>
                 </div>
@@ -74,11 +76,12 @@ export function ModeSelector({
 }
 
 export function ActiveModeBadge({ mode }: { mode: AIMode }) {
+  const { t } = useLanguage();
   const Icon = ICONS[mode];
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
       <Icon className="h-3.5 w-3.5" />
-      Current Mode: {MODE_LABEL[mode]} Mode
+      {t("currentMode")}: {t(mode as TranslationKey)} {t("mode")}
     </span>
   );
 }

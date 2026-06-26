@@ -27,10 +27,13 @@ interface TTSSpeakerProps {
 }
 
 export function TTSSpeaker({ text }: TTSSpeakerProps) {
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
   const { state, voices, selectedVoice, setSelectedVoice, rate, setRate, speak, pause, resume, stop, isSupported } = useTTS();
   const [open, setOpen] = useState(false);
   const hasSpokenRef = useRef(false);
+
+  // suppress unused warning — hasSpokenRef is used for side-effect tracking
+  void hasSpokenRef;
 
   if (!isSupported) return null;
 
@@ -46,7 +49,7 @@ export function TTSSpeaker({ text }: TTSSpeakerProps) {
   }
 
   const Icon = state === "playing" ? Pause : state === "paused" ? Play : Volume2;
-  const label = state === "playing" ? "Pause" : state === "paused" ? "Resume" : "Read aloud";
+  const label = state === "playing" ? t("pause") : state === "paused" ? t("resume") : t("readAloud");
 
   return (
     <div className="mt-1.5 flex items-center gap-1">
@@ -67,8 +70,8 @@ export function TTSSpeaker({ text }: TTSSpeakerProps) {
           variant="ghost"
           className="h-7 w-7 text-muted-foreground hover:text-destructive"
           onClick={stop}
-          title="Stop"
-          aria-label="Stop reading"
+          title={t("stop")}
+          aria-label={t("stop")}
         >
           <Square className="h-3.5 w-3.5" />
         </Button>
@@ -80,19 +83,19 @@ export function TTSSpeaker({ text }: TTSSpeakerProps) {
             size="icon"
             variant="ghost"
             className="h-7 w-7 text-muted-foreground hover:text-foreground"
-            title="Voice settings"
-            aria-label="Voice settings"
+            title={t("voiceSettings")}
+            aria-label={t("voiceSettings")}
           >
             <span className="text-[10px] font-semibold leading-none">⚙</span>
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-72 p-3 text-sm" side="top" align="start">
-          <p className="mb-2 font-semibold text-xs uppercase tracking-wider text-muted-foreground">Voice settings</p>
+          <p className="mb-2 font-semibold text-xs uppercase tracking-wider text-muted-foreground">{t("voiceSettings")}</p>
 
           {/* Speed slider */}
           <div className="mb-3">
             <div className="mb-1 flex items-center justify-between text-xs">
-              <span>Speed</span>
+              <span>{t("speed")}</span>
               <span className="text-muted-foreground">{rate.toFixed(1)}×</span>
             </div>
             <Slider
@@ -105,7 +108,7 @@ export function TTSSpeaker({ text }: TTSSpeakerProps) {
           {/* Voice selector */}
           {voices.length > 0 && (
             <div>
-              <p className="mb-1 text-xs">Voice</p>
+              <p className="mb-1 text-xs">{t("voice")}</p>
               <Select
                 value={selectedVoice?.name ?? "__auto__"}
                 onValueChange={(v) => {
@@ -114,10 +117,10 @@ export function TTSSpeaker({ text }: TTSSpeakerProps) {
                 }}
               >
                 <SelectTrigger className="h-8 text-xs">
-                  <SelectValue placeholder="Auto" />
+                  <SelectValue placeholder={t("auto")} />
                 </SelectTrigger>
                 <SelectContent className="max-h-52">
-                  <SelectItem value="__auto__">Auto</SelectItem>
+                  <SelectItem value="__auto__">{t("auto")}</SelectItem>
                   {voices.map((v) => (
                     <SelectItem key={v.name} value={v.name} className="text-xs">
                       {v.name} ({v.lang})
