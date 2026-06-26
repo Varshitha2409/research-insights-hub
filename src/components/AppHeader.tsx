@@ -3,18 +3,21 @@ import { useEffect, useState } from "react";
 import { Brain, LogOut, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-
-const NAV = [
-  { to: "/dashboard", label: "Dashboard" },
-  { to: "/upload", label: "Upload" },
-  { to: "/compare", label: "Compare" },
-  { to: "/insights", label: "Insights" },
-  { to: "/settings", label: "Settings" },
-] as const;
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useLanguage } from "@/components/LanguageProvider";
 
 export function AppHeader() {
   const navigate = useNavigate();
   const [email, setEmail] = useState<string | null>(null);
+  const { t } = useLanguage();
+
+  const NAV = [
+    { to: "/dashboard", label: t("dashboard") },
+    { to: "/upload",    label: t("upload") },
+    { to: "/compare",   label: t("compare") },
+    { to: "/insights",  label: t("insights") },
+    { to: "/settings",  label: t("settings") },
+  ] as const;
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
@@ -46,8 +49,9 @@ export function AppHeader() {
             </Link>
           ))}
           {email && <span className="hidden text-xs text-muted-foreground lg:inline">{email}</span>}
+          <LanguageSwitcher />
           <Button variant="ghost" size="sm" onClick={signOut} className="hidden md:inline-flex">
-            <LogOut className="mr-1 h-4 w-4" /> Sign out
+            <LogOut className="mr-1 h-4 w-4" /> {t("signOut")}
           </Button>
           <details className="relative md:hidden">
             <summary className="grid h-9 w-9 cursor-pointer list-none place-items-center rounded-md hover:bg-accent"><Menu className="h-4 w-4" /></summary>
@@ -55,7 +59,7 @@ export function AppHeader() {
               {NAV.map((n) => (
                 <Link key={n.to} to={n.to} className="block rounded px-3 py-2 text-sm hover:bg-accent">{n.label}</Link>
               ))}
-              <button onClick={signOut} className="block w-full rounded px-3 py-2 text-left text-sm hover:bg-accent">Sign out</button>
+              <button onClick={signOut} className="block w-full rounded px-3 py-2 text-left text-sm hover:bg-accent">{t("signOut")}</button>
             </div>
           </details>
         </nav>

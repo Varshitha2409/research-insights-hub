@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 
 const search = z.object({ mode: z.enum(["login", "signup"]).catch("login") });
 
@@ -56,10 +55,12 @@ function AuthPage() {
 
   async function handleGoogle() {
     setLoading(true);
-    const res = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/dashboard" });
-    if (res.error) { toast.error(res.error.message ?? "Google sign-in failed"); setLoading(false); return; }
-    if (res.redirected) return;
-    navigate({ to: "/dashboard" });
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin + "/dashboard" },
+    });
+    if (error) { toast.error(error.message ?? "Google sign-in failed"); setLoading(false); }
+    // On success, Supabase redirects the browser — no further action needed.
   }
 
   return (

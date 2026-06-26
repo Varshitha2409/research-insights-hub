@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
   GitCompare, Loader2, Sparkles, Plus, Search, Pencil, Trash2, Send, MessageSquare,
+  Mic, MicOff,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { useServerFn } from "@tanstack/react-start";
@@ -15,6 +16,9 @@ import {
 } from "@/lib/compare.functions";
 import { ModeSelector, ActiveModeBadge, useAIMode } from "@/components/ModeSelector";
 import { toast } from "sonner";
+import { TTSSpeaker } from "@/components/TTSSpeaker";
+import { useVoiceInput } from "@/hooks/use-voice-input";
+import { useLanguage } from "@/components/LanguageProvider";
 
 export const Route = createFileRoute("/_authenticated/compare")({
   head: () => ({ meta: [{ title: "Compare papers — ResearchMind AI" }] }),
@@ -30,6 +34,7 @@ function ComparePage() {
   const askFn = useServerFn(askComparison);
   const renameFn = useServerFn(renameComparison);
   const deleteFn = useServerFn(deleteComparison);
+  const { t, bcp47 } = useLanguage();
 
   const [papers, setPapers] = useState<Paper[]>([]);
   const [history, setHistory] = useState<Comparison[]>([]);
@@ -48,6 +53,11 @@ function ComparePage() {
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [mode, setMode] = useAIMode();
+
+  const voice = useVoiceInput({
+    lang: bcp47,
+    onTranscript: (txt) => setInput((prev) => prev ? prev + " " + txt : txt),
+  });
 
   async function loadPapers() {
     const { data } = await supabase
@@ -142,19 +152,19 @@ function ComparePage() {
           className="mb-3"
           onClick={() => { setShowNew(true); setActiveId(null); setMessages([]); }}
         >
-          <Plus className="mr-2 h-4 w-4" /> New comparison
+          <Plus className="mr-2 h-4 w-4" /> {t("newComparison")}
         </Button>
         <div className="relative mb-2">
           <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search} onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search history" className="h-9 pl-7"
+            placeholder={t("searchHistory")} className="h-9 pl-7"
           />
         </div>
-        <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">History</div>
+        <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("history")}</div>
         <div className="mt-2 flex-1 space-y-1 overflow-y-auto">
           {filtered.length === 0 && (
-            <p className="px-1 py-4 text-xs text-muted-foreground">No comparisons yet.</p>
+            <p className="px-1 py-4 text-xs text-muted-foreground">{t("noComparisons")}</p>
           )}
           {filtered.map((c) => (
             <div
@@ -245,6 +255,7 @@ function ComparePage() {
                     {m.role === "assistant" ? (
                       <div className="prose prose-sm prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
                         <ReactMarkdown>{m.content}</ReactMarkdown>
+                        <TTSSpeaker text={m.content} />
                       </div>
                     ) : (
                       <div className="whitespace-pre-wrap">{m.content}</div>
@@ -270,6 +281,14 @@ function ComparePage() {
               </div>
 
               <div className="flex items-end gap-2">
+                <Button type="button" size="icon"
+                  variant={voice.state === "listening" ? "default" : "outline"}
+                  className={`h-11 w-11 flex-shrink-0 ${voice.state === "listening" ? "animate-pulse" : ""}`}
+                  onClick={voice.toggle}
+                  disabled={voice.state === "unsupported"}
+                  title={voice.state === "listening" ? "Listening… click to stop" : "Voice input"}>
+                  {voice.state === "listening" ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                </Button>
                 <Textarea
                   value={input} onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}

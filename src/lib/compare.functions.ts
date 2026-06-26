@@ -6,20 +6,28 @@ import { AI_MODES, buildBehaviorInstructions } from "@/lib/aiBehavior";
 
 
 
-const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-
+// Direct Gemini API — no Lovable credits needed.
+// Uses Google's OpenAI-compatible endpoint.
 async function callGemini(messages: { role: string; content: string }[]) {
-  const apiKey = process.env.LOVABLE_API_KEY;
-  if (!apiKey) throw new Error("AI is not configured");
-  const resp = await fetch(AI_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({ model: "google/gemini-2.5-flash", messages }),
-  });
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("AI is not configured. Set GEMINI_API_KEY in your environment.");
+
+  const resp = await fetch(
+    "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({ model: "gemini-2.5-flash", messages }),
+    },
+  );
+
   if (!resp.ok) {
     const txt = await resp.text();
-    if (resp.status === 429) throw new Error("AI rate limit reached.");
-    if (resp.status === 402) throw new Error("AI credits exhausted.");
+    if (resp.status === 429) throw new Error("AI rate limit reached. Try again shortly.");
+    if (resp.status === 403) throw new Error("Invalid Gemini API key. Check your GEMINI_API_KEY.");
     throw new Error(`AI error: ${resp.status} ${txt.slice(0, 200)}`);
   }
   const json = (await resp.json()) as { choices: { message: { content: string } }[] };
