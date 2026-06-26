@@ -23,16 +23,35 @@ function ResetPasswordPage() {
   const [tokenStatus, setTokenStatus] = useState<"checking" | "valid" | "invalid">("checking");
 
   useEffect(() => {
-    // Supabase puts the recovery token in the URL hash and auto-creates a session via onAuthStateChange.
+    // Parse the token from the URL hash/query params that Supabase sends
+    // The recovery token comes as #access_token=...&type=recovery OR as ?code=... (PKCE)
+    const hash = window.location.hash;
+    const params = new URLSearchParams(window.location.search);
+
+    // Handle PKCE flow (code in query string)
+    if (params.get("code")) {
+      supabase.auth.exchangeCodeForSession(params.get("code")!).then(({ error }) => {
+        if (!error) setTokenStatus("valid");
+        else setTokenStatus("invalid");
+      });
+      return;
+    }
+
+    // Handle implicit flow (token in hash)
+    if (hash.includes("type=recovery") || hash.includes("access_token")) {
+      supabase.auth.getSession().then(({ data }) => {
+        if (data.session) setTokenStatus("valid");
+        else setTokenStatus("invalid");
+      });
+      return;
+    }
+
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") setTokenStatus("valid");
     });
-    // Fallback: if a session already exists from the recovery link, allow reset.
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) setTokenStatus((s) => (s === "checking" ? "valid" : s));
-      else {
-        setTimeout(() => setTokenStatus((s) => (s === "checking" ? "invalid" : s)), 1500);
-      }
+      else setTimeout(() => setTokenStatus((s) => (s === "checking" ? "invalid" : s)), 2000);
     });
     return () => sub.subscription.unsubscribe();
   }, []);
@@ -51,9 +70,11 @@ function ResetPasswordPage() {
     try {
       const { error } = await supabase.auth.updateUser({ password: pwd });
       if (error) throw error;
-      // Invalidate other sessions (sign out local; user must log in again).
       await supabase.auth.signOut();
+      toast.success(t("passwordUpdatedSuccess"));
       setDone(true);
+      // Auto-redirect to login after 2 seconds
+      setTimeout(() => navigate({ to: "/auth", search: { mode: "login" } }), 2000);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("failedToUpdatePassword"));
     } finally {

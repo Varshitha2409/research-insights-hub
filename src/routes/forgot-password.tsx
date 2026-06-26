@@ -23,9 +23,9 @@ function ForgotPasswordPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + "/reset-password",
-      });
+      // Always redirect to /reset-password — never to /dashboard
+      const redirectTo = window.location.origin + "/reset-password";
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
       if (error) throw error;
       setSent(true);
     } catch (err) {

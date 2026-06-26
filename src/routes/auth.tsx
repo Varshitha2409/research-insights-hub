@@ -38,7 +38,7 @@ function AuthPage() {
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
           email, password,
-          options: { emailRedirectTo: window.location.origin + "/dashboard" },
+          options: { emailRedirectTo: window.location.origin + "/auth?mode=login" },
         });
         if (error) throw error;
         toast.success(t("accountCreated"));
