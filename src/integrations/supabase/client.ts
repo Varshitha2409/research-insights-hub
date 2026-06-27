@@ -23,7 +23,7 @@ function createSupabaseClient() {
 
   // Warn if still pointing at old project
   if (SUPABASE_URL.includes("cedqbgnouhzhcpgnzrnc")) {
-    console.warn("[Supabase] WARNING: Still using old project ID. Update env vars to use afefxredjpwxjzxttxyj");
+    console.warn("[Supabase] Old project detected. Update SUPABASE_URL to https://afefxredjpwxjzxttxyj.supabase.co");
   }
 
   return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
