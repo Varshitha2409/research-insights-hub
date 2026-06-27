@@ -21,9 +21,9 @@ function createSupabaseClient() {
     throw new Error(message);
   }
 
-  // Warn if still pointing at old project
-  if (SUPABASE_URL.includes("cedqbgnouhzhcpgnzrnc")) {
-    console.warn("[Supabase] Old project detected. Update SUPABASE_URL to https://afefxredjpwxjzxttxyj.supabase.co");
+  // Validate we're pointing at the correct project
+  if (SUPABASE_URL && !SUPABASE_URL.includes("afefxredjpwxjzxttxyj")) {
+    console.warn("[Supabase] Unexpected project URL. Expected afefxredjpwxjzxttxyj");
   }
 
   return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
